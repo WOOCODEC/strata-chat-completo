@@ -40,17 +40,7 @@ const FILES = [
   'tools/voice-check.js',
   'tools/verify-files.js',
   'tools/server.ps1',
-  'tools/package.ps1',
-  'tools/install.ps1',
-  'tools/uninstall.ps1',
-  'tools/package-check.ps1',
-  'tools/install-check.ps1',
-  'packaging/StrataChat.cmd',
-  'packaging/StrataChat-parar.cmd',
-  'packaging/StrataChat-estado.cmd',
-  'packaging/Instalar.cmd',
-  'packaging/Desinstalar.cmd',
-  'packaging/LEEME-INSTALACION.txt',
+  'tools/browser-check.js',
 ];
 
 const MOJIBAKE_PATTERN = /[\u00C2\u00C3\uFFFD]/;

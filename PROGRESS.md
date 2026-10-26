@@ -154,11 +154,70 @@ node tools\verify-files.js    # UTF-8 limpio, sin mojibake
 | 12 | Sonido de notificacion al terminar la respuesta | Pendiente | opcional y silenciable, sin recursos externos |
 | 13 | Ventana flotante / siempre encima | Descartado | desde el navegador no se puede; haria falta un envoltorio de escritorio |
 | 14 | Palabra clave o PIN si se expone fuera del `127.0.0.1` | Guardado en el cajon | ver la decision sobre la Fase 1.5 mas abajo |
-| 15 | Arranque automatico con Windows | HECHO (instalador del paquete) | lanzado al iniciar sesion con `tools\server.ps1 -Start -Hidden` (el lanzador ya admitia `-Hidden`; el instalador del paquete crea el acceso de Inicio con `-AutoStart` y se quita al desinstalar) |
+| 15 | Arranque automatico con Windows | VUELVE A PENDIENTE (limpieza del 26/10/2026) | el acceso de Inicio lo creaba el instalador retirado, y en este PC no habia ninguno: la carpeta `Startup` esta vacia (comprobado tras el borrado). `tools\server.ps1 -Start -Hidden` sigue valiendo como orden; falta solo donde engancharla (un .lnk en `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup` o una tarea del Programador) |
 | 16 | Guardar el aviso de "imagen no aceptada" en el historial | Pendiente | hoy el aviso solo aparece en la respuesta recien recibida; al recargar la pagina desaparece. Hace falta una columna nueva en `messages` (`note` o `meta` JSON) y ensenarla otra vez en la burbuja y en el panel |
-| 17 | Llevarselo a otro PC (paquete e instalador) | HECHO (tanda del instalador) | `tools\package.ps1` genera la carpeta portable con `node.exe` dentro y su zip; `Instalar.cmd`/`Desinstalar.cmd` (o `tools\install.ps1` / `tools\uninstall.ps1`) dejan accesos en Menu Inicio y en "Quitar programas", sin llevar historial ni `.env` salvo `-WithData`/`-WithEnv` |
+| 17 | Llevarselo a otro PC (paquete e instalador) | RETIRADO (limpieza del 26/10/2026) | se quitaron `packaging\` y los scripts `tools\package.ps1` / `install.ps1` / `uninstall.ps1` con sus dos arneses: con el codigo en GitHub, en otro PC se clona el repo, `npm install` y `start-strata-chat.cmd` (hace falta Node en el destino). Vuelve del historial de Git con `git checkout 78a713c -- packaging tools/package.ps1 tools/install.ps1 tools/uninstall.ps1` |
 
 ## Registro de tandas
+
+### Tanda del 26/10/2026 (limpieza: fuera el empaquetado portable) - 128/128 en el arnes, 13/13 en Chrome real
+
+**Lo pedido:** el codigo ya esta versionado y subido a
+`https://github.com/WOOCODEC/strata-chat-completo.git` (`main`, commit `78a713c`),
+asi que la carpeta de empaquetado y sus scripts asociados ya no hacen falta en el
+dia a dia y el arbol de trabajo se deja limpio.
+
+**Que se ha quitado (11 ficheros rastreados + lo generado):**
+
+- `packaging\` entero: `Instalar.cmd`, `Desinstalar.cmd`, `StrataChat.cmd`,
+  `StrataChat-parar.cmd`, `StrataChat-estado.cmd` y `LEEME-INSTALACION.txt`.
+- `tools\package.ps1`, `tools\install.ps1`, `tools\uninstall.ps1` y los dos
+  arneses `tools\package-check.ps1` / `tools\install-check.ps1`: sin la carpeta a
+  la que apuntaban se quedaban sin entry point.
+- `dist\` (161,8 MB entre la carpeta portable y el zip).
+
+**Con que red se borro:** los once ficheros estaban **rastreados y ya subidos**, o
+sea que vuelven con
+`git checkout 78a713c -- packaging tools/package.ps1 tools/install.ps1 tools/uninstall.ps1`.
+`dist\` en cambio esta en `.gitignore` y Git no lo guarda, asi que se mando a la
+**papelera de reciclaje** en vez de borrarlo a fuego: los 161,8 MB siguen siendo
+sacables de ahi sin tener que regenerar nada. La regla `dist/` del `.gitignore` se
+queda: si algun dia se recupera el empaquetado, su salida no debe volver al repo.
+
+**Antes de tocar nada, barrido de referencias:** ningun lanzador
+(`start-strata-chat.cmd`), ningun `package.json` y ningun arnes vivo (`smoke.js`,
+`status-check.js`, `browser-check.js`, `copy-check.js`, `server.ps1`) mencionaban
+esos scripts. Solo los mencionaban `README.md`, `PROGRESS.md` y la lista de
+ficheros de `tools\verify-files.js`.
+
+**Documentacion ajustada:** `verify-files.js` deja de pedir los 11 ficheros (si no,
+el arnes de codificacion fallaba con `FALTA ...`) y pasa a comprobar
+`tools\browser-check.js`, que si existe y estaba fuera de la lista; `README.md`
+pierde esas lineas de la estructura, cambia los dos arneses de «Verificacion» por
+`node tools\browser-check.js` (el arnes de navegador que si sigue en el repo) y
+reescribe «Llevarselo a otro PC» a clonar de GitHub, con la orden de Git para
+recuperar el paquete. En el backlog, la fila 17 pasa a RETIRADO y la **15 vuelve a
+pendiente**: el acceso de Inicio lo creaba el instalador retirado, y al mirar
+`%APPDATA%\...\Programs\Startup` ha salido que en este PC no habia ninguno, o sea
+que no se ha perdido nada pero ya no queda mecanismo.
+
+**Verificacion despues del borrado:** `npm run check` limpio;
+`node tools\verify-files.js` **30 ficheros, sin problemas de codificacion**;
+`node tools\smoke.js` **128 comprobaciones, 0 fallos**; `node tools\browser-check.js`
+**13 de 13 en verde** contra el servidor arrancado con `tools\server.ps1 -Start`
+(sin ventana, pid 29400): portada servida como HTML, cero errores de JavaScript,
+modelo `qwen3.8-flash-next-iq3_s` visible, chat de borde a borde con **hueco 0 px**
+y los enlaces a `style.css` / `script.js` / `markdown.js` limpios, sin `?v=`.
+
+**Complemento de limpieza:** `database\server.log.old` y
+`database\server-error.log.old` estaban rastreados y cambiaban en cada arranque, o
+sea que metian ruido en `git status`. Se han dejado de rastrear (siguen en el
+disco) y `.gitignore` gana la regla `database/*.log.old`, que era el hueco por el
+que habian entrado.
+
+**Consecuencia que hay que saber:** llevar el chat a otro PC vuelve a requerir Node
+en el destino e internet para clonar; a cambio se acabo el binario de 42 MB que
+habia que regenerar cada vez que cambiaba el codigo.
 
 ### Tanda del 26/10/2026 (el «no arranca» era un ReferenceError en la portada, no la maquetacion) - 128/128 en el arnes, 12/12 en Chrome real
 
@@ -843,7 +902,9 @@ dentro: `dist\portable\StrataLocalChat` 119,8 MB y
   no abre conexiones ni usa librerias externas, y un PDF cifrado o escaneado se
   reporta en voz alta en vez de rellenar el contexto con ruido.
 
-- **El paquete no lleva datos personales por defecto**: el zip portable incluye
+- **El paquete no llevaba datos personales por defecto** *(empaquetado retirado el
+  26/10/2026, ver la tanda de limpieza; la regla sigue valiendo si se recupera del
+  historial de Git)*: el zip portable incluia
   codigo, dependencias y el `node.exe` embebido, pero **no** el `.env` ni
   `database\chat.db`; hacerlos viajar es decision explicita con `-WithData` /
   `-WithEnv`. El runtime se copia del Node con el que se ha probado la tanda, no se

@@ -8,3 +8,4 @@ database/*.log
 npm-debug.log*
 npm-error.log*
 dist/
+database/*.log.old

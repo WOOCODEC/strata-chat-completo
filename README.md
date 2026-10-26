@@ -22,12 +22,7 @@ StrataLocalChat/
   tools/vision-probe.js  <- sonda para ver como acepta imagenes tu Strata
   tools/verify-files.js  <- comprueba que todos los ficheros sean UTF-8 limpio
   tools/server.ps1       <- arranque y parada limpia (npm run start:open / serve / stop)
-  tools/package.ps1      <- arma el paquete portable e instalable (mete Node dentro)
-  tools/install.ps1      <- instala en %LOCALAPPDATA%: accesos + "Quitar programas"
-  tools/uninstall.ps1    <- quita la instalacion y guarda el historial
-  tools/package-check.ps1 / tools/install-check.ps1  <- arneses del paquete y del instalador
-  packaging/             <- los .cmd de doble clic que se meten dentro del paquete
-  dist/                  <- aqui sale la carpeta y el zip (esta en .gitignore)
+  tools/browser-check.js <- abre un Chrome real contra la interfaz y mira lo que pinta
   .env               <- configuracion (URL, modelo, DB, limites)
 ```
 
@@ -96,15 +91,15 @@ npm run status     # que modelo y que soporte de vision tiene el servidor en mar
 npm run vision     # manda imagenes de prueba y cuenta si las acepta
 npm run verify     # codificacion + markdown + copiado + lector de PDF + voz + arnes completo, de golpe
 
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\package-check.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\install-check.ps1
+node tools\browser-check.js   # Chrome real: portada, errores JS y chat de borde a borde
 ```
 
-`package-check.ps1` se carga el paquete generado y lo arranca con el `PATH` de
-Windows pelado (sin Node en el sistema) para comprobar que el `node.exe` embebido
-basta; `install-check.ps1` instala y desinstala de verdad en este PC y comprueba
-accesos, registro y que el historial sobrevive. Son arneses de desarrollo: tocan
-el equipo, no los uses en el PC de un tercero.
+`node tools\browser-check.js` abre el Chrome de este PC en modo sin interfaz y con
+perfil limpio (sin extensiones), inyecta un cazador de errores antes de cargar la
+pagina y comprueba desde dentro lo que los demas arneses no ven: que la portada
+sale como HTML y no como error del servidor, que no hay barra de medidas puesta,
+que el chat llega al borde derecho (hueco 0 px) y que el modelo aparece cargado.
+Hace falta el servidor arrancado; con `--url` se prueba otra direccion.
 
 `npm run smoke` levanta el servidor en el puerto 3999 con una base de datos
 temporal (`database/smoke-test.db`, se borra al terminar). Comprueba interfaz,
@@ -131,59 +126,27 @@ gana la voz natural local, que la lectura se encadena trozo a trozo, que cambiar
 o velocidad a media lectura se nota en lo que queda por leer y que al pulsar **Parar**
 deja de sonar todo.
 
-## Llevarselo a otro PC (paquete e instalador, sin internet)
+## Llevarselo a otro PC
 
-No hace falta instalar Node en el otro equipo: el paquete se lleva su propio
-`node.exe` dentro. Se arma desde este PC, que si tiene Node:
+El empaquetado portable se **retiro el 26/10/2026**: se fue `packaging\` (los
+`.cmd` de doble clic `Instalar`, `Desinstalar`, `StrataChat`, `StrataChat-parar`,
+`StrataChat-estado` y su `LEEME-INSTALACION.txt`) y con ella `tools\package.ps1`,
+`tools\install.ps1`, `tools\uninstall.ps1` y los dos arneses
+`tools\package-check.ps1` / `tools\install-check.ps1`, mas lo generado en `dist\`.
+
+Como se lleva a otro PC ahora: clonar este repositorio
+(`https://github.com/WOOCODEC/strata-chat-completo.git`), `npm install` y
+`start-strata-chat.cmd`. El destino necesita Node >= 18.17 e internet para clonar;
+a cambio no hay SmartScreen ni paquetes de 42 MB que mantener al dia. El historial
+viaja copiando `database\chat.db` con el servidor parado, y el servidor sigue
+escuchando solo en `127.0.0.1`: llevarselo a otro PC no abre ninguna puerta a la red.
+
+Si algun dia hace falta otra vez el paquete con `node.exe` embebido, sigue en el
+historial de Git (commit `78a713c`):
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\package.ps1
+git checkout 78a713c -- packaging tools/package.ps1 tools/install.ps1 tools/uninstall.ps1
 ```
-
-Salen dos cosas:
-
-- `dist\portable\StrataLocalChat\` : la carpeta, para copiarla tal cual (119,7 MB).
-- `dist\StrataLocalChat-1.0.0-win-x64-portable.zip` : el zip para llevar (42,0 MB).
-
-Que lleva dentro: `src\`, `node_modules\` (de `better-sqlite3` solo el binario
-`win32-x64.node`; los de Linux y macOS se quitan, son 11 MB de nada), `tools\`
-sin los arneses de desarrollo, `runtime\node.exe` (el mismo Node con el que se
-probo esta tanda: v22.23.4 x64, ABI 127, que es para el que esta compilado el
-binario de SQLite) y los arranques de doble clic con su `LEEME-INSTALACION.txt`.
-
-**Por defecto no se lleva tu historial ni tu `.env`** (son tus conversaciones y
-tus ajustes). Para llevarlos: `-WithData` y `-WithEnv`. Otros switches:
-`-SkipZip` (solo la carpeta) y `-OutDir "D:\paquetes"`.
-
-En el PC de destino, descomprimir y doble clic:
-
-- `Instalar.cmd` : copia la app a `%LOCALAPPDATA%\Programs\StrataLocalChat`, crea
-  `.env` a partir de `.env.example` (si no habia), quita el acceso viejo del Menu
-  Inicio si apuntaba a la carpeta en vez de a la app, y añade los accesos
-  **Abrir / Parar / Estado del servidor** en Menu Inicio > *Strata Local Chat*,
-  mas la entrada en "Agregar o quitar programas". Con `-AutoStart` ademas se
-  arranca solo al iniciar sesion.
-- `StrataChat.cmd` : sin instalar nada: arranca el servidor local y abre la
-  pestaña. `StrataChat-parar.cmd` lo para, `StrataChat-estado.cmd` enseña quien
-  escucha y si Strata es alcanzable.
-- `Desinstalar.cmd` : quita programa, accesos y registro, **guardando antes**
-  `database\` y `.env` en `%LOCALAPPDATA%\StrataLocalChat-historial\<fecha>`.
-  Para borrarlo todo del tiron: `tools\uninstall.ps1 -Purge`.
-
-Requisitos del destino: Windows 10 u 11 de 64 bits y nada mas. El chat responde
-si en ese PC esta Strata (la app arranca igual sin el y lo avisa en pantalla).
-El servidor sigue escuchando solo en `127.0.0.1`: llevarselo a otro PC no abre
-ninguna puerta a la red.
-
-Para pasar el historial de un PC a otro: copiar `database\chat.db` en la carpeta
-`database\` del destino con el servidor parado.
-
-Cosas que hay que saber: no es un MSI ni lleva firma digital, asi que Windows
-puede avisar con SmartScreen ("la aplicacion no esta reconocida"): es el paquete
-de esta casa, se puede ejecutar de todas formas. Y el `install.ps1` copia desde
-el paquete ya generado: si cambias codigo, vuelve a pasar `tools\package.ps1`
-antes de instalar (el arnes `package-check.ps1` compara los hashes para que no
-se cuele un paquete viejo).
 
 ## Configuracion (.env)
 

@@ -1,0 +1,10 @@
+node_modules/
+.env
+database/*.db
+database/*.db-shm
+database/*.db-wal
+database/*.pid
+database/*.log
+npm-debug.log*
+npm-error.log*
+dist/

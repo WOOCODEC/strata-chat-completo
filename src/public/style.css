@@ -1,0 +1,1181 @@
+:root {
+  --bg: #0e1116;
+  --panel: #151a21;
+  --panel-2: #1b222b;
+  --border: #242e3a;
+  --text: #e7edf4;
+  --muted: #8a97a8;
+  --accent: #3fb27f;
+  --accent-strong: #2f8c63;
+  --danger: #c8554d;
+  --user-bubble: #1e4c3c;
+  --radius: 10px;
+  /* Medida del hilo y margen lateral comun: cabecera, mensajes, cuadro de
+     escritura y aviso comparten canto. Por defecto la interfaz es de ANCHO
+     COMPLETO borde a borde: el chat absorbe con flex-grow todo el espacio que
+     antes sobraba a la derecha y el unico margen lateral es una franja fija y
+     simetrica (--frame). En la cadena body -> .chat -> #messages -> #thread ->
+     .bubble ya NO queda ningun max-width en pixeles: esas cifras fijas
+     (900/1180/1320 px) eran justo lo que dejaba la franja negra enorme al lado
+     derecho. El boton «Ancho comodo» de la cabecera anade la clase width-cozy
+     al body, que recorta solo la columna de texto y la centra dentro del chat,
+     para que en monitores enormes la linea no se haga incomoda de seguir. */
+  --frame: clamp(10px, 1.1vw, 20px);
+  --thread-max: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  /* Los contenedores externos ocupan toda la ventana: ningun max-width fijo. */
+  width: 100%;
+  max-width: none;
+}
+
+/* ---------------------------------------------------------------------------
+   CADENA DE LAYOUT DE BORDE A BORDE, BLINDADA.
+   Historicamente esta hoja tuvo topes fijos de 900 / 1180 / 1320 px en el hilo
+   de lectura. Con una ventana de 1702 px, un tope de 1320 px deja 382 px de
+   franja muerta a la derecha (1702 - 1320 = 382): eso es exactamente el hueco
+   reportado, y por eso el diagnostico daba «el contenedor padre mide 1318 px».
+   Volver a poner una cifra en pixeles aqui reintroduce el fallo, asi que la
+   garantia va con !important: ni siquiera una copia antigua de esta hoja, o una
+   regla suelta del navegador, puede volver a encajonar el layout principal.
+   --------------------------------------------------------------------------- */
+body,
+.chat,
+.messages,
+.thread {
+  max-width: none !important;
+}
+
+main.chat {
+  /* El chat absorbe el sobrante: flex-grow con base 0, sin ancho ni tope. */
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.thread {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Punto 3 del pedido: el panel de detalles ocupe el suyo sin forzar limites en
+   el padre. Con flex-shrink 0 el chat absorbe el sobrante exacto al abrirlo y
+   al cerrarlo; en ventana estrecha pasa a capa flotante y ahi no molesta. */
+aside.inspector {
+  flex-shrink: 0 !important;
+  min-width: 0 !important;
+}
+
+/* Ningun envoltorio del layout se centra ni deja margen lateral: 0 a la derecha
+   tiene que ser 0 pixels, no «0 pixels menos el margen de centrado». */
+html,
+body,
+main.chat,
+aside.sidebar,
+aside.inspector {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ---------------- Sidebar ---------------- */
+.sidebar {
+  /* Ancho fluido: se encoge en ventanas estrechas y algo mas en las anchas. */
+  flex: 0 0 clamp(224px, 19vw, 320px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  min-width: 0;
+}
+
+.sidebar-top {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.search:focus,
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chat-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chat-list-hint {
+  padding: 0 16px 12px;
+  color: var(--muted);
+  font-size: 12.5px;
+  margin: 0;
+}
+
+.chat-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  width: 100%;
+}
+
+.chat-item:hover {
+  background: var(--panel-2);
+}
+
+.chat-item.is-active {
+  background: var(--panel-2);
+  border-color: var(--accent-strong);
+}
+
+.chat-item-main {
+  min-width: 0;
+}
+
+.chat-item-title {
+  display: block;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-item-sub {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-item-del {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.chat-item-del:hover {
+  color: var(--danger);
+  background: rgba(200, 85, 77, 0.12);
+}
+
+.sidebar-bottom {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #6b7689;
+  flex: 0 0 9px;
+}
+
+.status.is-online .dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(63, 178, 127, 0.18);
+}
+
+.status.is-offline .dot {
+  background: var(--danger);
+  box-shadow: 0 0 0 3px rgba(200, 85, 77, 0.16);
+}
+
+.model-name,
+.db-info {
+  word-break: break-all;
+}
+
+/* ---------------- Zona de chat ---------------- */
+.chat {
+  /* El chat ABSORBE todo el hueco que queda a la derecha: flex-grow con base
+     0, sin ancho fijo, sin max-width y sin margen automatico. Es el punto
+     exacto que pedias: flex: 1 en el area principal. */
+  flex: 1 1 0;
+  width: auto;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px var(--frame);
+  border-bottom: 1px solid var(--border);
+  background: rgba(21, 26, 33, 0.75);
+}
+
+.chat-header h1 {
+  margin: 0;
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: 15.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.messages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  /* El mismo canto que la cabecera y el cuadro: franja fija y simetrica a los
+     dos lados, sin topes en pixeles que dejen hueco a la derecha. */
+  padding: 20px var(--frame);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  /* SIEMPRE al 100%: ya no hay modo ninguno que recorte esta columna. Antes el
+     «Ancho comodo» la bajaba a 1180 px y ahi aparecia la franja vacia a la
+     derecha; ahora el modo comodo solo sube el tamano de letra (linea ~1080). */
+  max-width: var(--thread-max);
+  min-height: 100%;
+  margin: 0 auto;
+}
+
+.empty-state {
+  margin: auto;
+  color: var(--muted);
+  text-align: center;
+  max-width: min(460px, 100%);
+  padding: 26px 0;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.msg.is-user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.msg.is-assistant {
+  align-self: stretch;
+  align-items: stretch;
+}
+
+.bubble {
+  padding: 10px 14px;
+  border-radius: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* El asistente aprovecha todo el ancho; lo tuyo sigue siendo una burbuja. */
+.msg.is-assistant .bubble {
+  width: 100%;
+}
+
+.msg.is-user .bubble {
+  width: fit-content;
+  max-width: min(880px, 96%);
+}
+
+/* ------- contenido markdown dentro de la burbuja ------- */
+.bubble p {
+  margin: 0 0 8px;
+}
+
+.bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.bubble .md-h {
+  margin: 10px 0 6px;
+  font-size: 1.04em;
+  line-height: 1.35;
+}
+
+.bubble .md-h:first-child {
+  margin-top: 2px;
+}
+
+.bubble .md-list {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.bubble .md-list li {
+  margin: 2px 0;
+}
+
+.bubble .md-task {
+  list-style: none;
+  margin-left: -14px;
+}
+
+.bubble .md-quote {
+  margin: 6px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--accent-strong);
+  color: var(--muted);
+}
+
+.bubble .md-hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 10px 0;
+}
+
+.bubble .md-inline {
+  font-family: ui-monospace, Consolas, "Segoe UI Mono", monospace;
+  font-size: 0.92em;
+  background: #0c0f14;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+/* Bloque de codigo con cabecera (lenguaje + boton de copiar). */
+.bubble .md-codebox {
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0c0f14;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.bubble .md-codebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 6px 5px 11px;
+  background: #11161d;
+  border-bottom: 1px solid var(--border);
+}
+
+.bubble .md-codelang {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bubble .md-code {
+  margin: 0;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  overflow-x: auto;
+  white-space: pre;
+  max-width: 100%;
+}
+
+.bubble .md-code code {
+  font-family: ui-monospace, Consolas, "Segoe UI Mono", monospace;
+  font-size: 12.6px;
+  line-height: 1.5;
+}
+
+.bubble .md-table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 13px;
+  max-width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+.bubble .md-table th,
+.bubble .md-table td {
+  border: 1px solid var(--border);
+  padding: 5px 9px;
+  text-align: left;
+}
+
+.bubble .md-table th {
+  background: var(--panel);
+}
+
+.bubble a {
+  color: #7fd1a8;
+}
+
+.bubble del {
+  color: var(--muted);
+}
+
+.bubble strong {
+  color: #f4f8fc;
+}
+
+/* ------- imagenes adjuntas dentro de un mensaje ------- */
+.attach-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.attach-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 220px;
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.attach-thumb img {
+  width: 100%;
+  max-width: 220px;
+  max-height: 170px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0c0f14;
+}
+
+.attach-thumb span {
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg.is-user .bubble {
+  background: var(--user-bubble);
+  border-color: #2b6a54;
+}
+
+.bubble.is-error {
+  background: rgba(200, 85, 77, 0.12);
+  border-color: var(--danger);
+  color: #f1c8c4;
+}
+
+.bubble.is-thinking::after {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 1.05em;
+  margin-left: 3px;
+  background: var(--accent);
+  vertical-align: text-bottom;
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.msg-meta {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* Fila de acciones bajo un mensaje (copiar y leer en voz alta). */
+.msg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.msg.is-user .msg-actions {
+  justify-content: flex-end;
+}
+
+.msg-actions:empty {
+  display: none;
+}
+
+.btn-read {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(31, 39, 50, 0.7);
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+
+.btn-read:hover {
+  color: var(--text);
+  border-color: rgba(90, 140, 190, 0.55);
+}
+
+.btn-read.is-reading {
+  color: #ffd479;
+  border-color: rgba(255, 212, 121, 0.45);
+  background: rgba(255, 212, 121, 0.08);
+}
+
+/* Pastillas de copiado: la de la respuesta y la de cada bloque de codigo. */
+.btn-copy {
+  border: 1px solid rgba(63, 178, 127, 0.32);
+  border-radius: 999px;
+  background: rgba(31, 39, 50, 0.7);
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 4px 11px;
+  cursor: pointer;
+}
+
+.btn-copy:hover {
+  color: #a8e6c8;
+  border-color: rgba(63, 178, 127, 0.6);
+}
+
+.btn-copy.is-copied {
+  color: #7fe0b0;
+  border-color: rgba(63, 178, 127, 0.7);
+  background: rgba(63, 178, 127, 0.12);
+}
+
+.btn-copy.is-copy-fail {
+  color: #f1c8c4;
+  border-color: rgba(200, 85, 77, 0.6);
+  background: rgba(200, 85, 77, 0.12);
+}
+
+.btn-copy-block {
+  flex: 0 0 auto;
+  font-size: 11px;
+  padding: 3px 10px;
+}
+
+/* ---------------- Composer y botones ---------------- */
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  padding: 12px var(--frame);
+  border-top: 1px solid var(--border);
+  background: rgba(21, 26, 33, 0.6);
+}
+
+.composer-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.btn-attach {
+  flex: 0 0 auto;
+}
+
+.attach-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.attach-chip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 280px;
+  padding: 5px 26px 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.attach-chip img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #0c0f14;
+}
+
+.attach-chip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attach-chip button {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 5px;
+}
+
+.attach-chip button:hover {
+  color: var(--danger);
+  background: rgba(200, 85, 77, 0.14);
+}
+
+/* ------- un PDF adjunto dentro de un mensaje ------- */
+.attach-doc {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 340px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 11.5px;
+  text-decoration: none;
+}
+
+.attach-doc:hover {
+  border-color: #4b7f9e;
+  background: #16202b;
+}
+
+.attach-doc .doc-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid #6b4f2a;
+  background: #2a1f12;
+  color: #e0b878;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.attach-doc .doc-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.attach-doc .doc-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attach-doc .doc-note {
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+/* Chip del PDF en la barra de escritura (se quita con la X). */
+.attach-chip.is-doc {
+  padding-left: 8px;
+}
+
+.attach-chip.is-doc .doc-mark {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid #6b4f2a;
+  background: #2a1f12;
+  color: #e0b878;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.attach-note {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.attach-note.is-error {
+  color: #f1c8c4;
+}
+
+.chat.is-dropping {
+  outline: 2px dashed var(--accent-strong);
+  outline-offset: -8px;
+}
+
+.input {
+  flex: 1 1 auto;
+  resize: none;
+  min-height: 44px;
+  max-height: 220px;
+  padding: 11px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+}
+
+.composer-hint {
+  margin: 0;
+  padding: 2px var(--frame) 12px var(--frame);
+  color: var(--muted);
+  font-size: 11.5px;
+  background: rgba(21, 26, 33, 0.6);
+}
+
+.btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  border-color: #35424f;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: #fff;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-primary.is-stopping {
+  background: #6b4148;
+  border-color: #8a5560;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+  font-size: 12.5px;
+  padding: 7px 10px;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(200, 85, 77, 0.4);
+  font-size: 12.5px;
+  padding: 7px 10px;
+}
+
+/* ---------------- Panel derecho (detalles) ---------------- */
+.inspector {
+  /* El panel de DETALLES tenia un fondo casi igual al del chat y hasta 372 px:
+     en la pantalla se leia como «espacio libre a la derecha», que es la queja
+     repetida. Sigue fluido (nada de cifras fijas), pero baja a 336 px, se
+     separa con borde y sombra, y el boton dice cuantos px te esta quitando. */
+  flex: 0 0 clamp(238px, 18vw, 336px);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #171e28;
+  border-left: 1px solid #33424f;
+  box-shadow: -16px 0 34px rgba(0, 0, 0, 0.42);
+}
+
+body.inspector-off .inspector {
+  display: none;
+}
+
+.inspector-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inspector-top h2 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.inspector-scroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 6px 14px 18px;
+}
+
+.inspector-block {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(36, 46, 58, 0.6);
+}
+
+.inspector-block:last-child {
+  border-bottom: 0;
+}
+
+.inspector-block h3 {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.facts div {
+  display: grid;
+  gap: 1px;
+}
+
+.facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 12.5px;
+  word-break: break-word;
+}
+
+.inspector-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tips {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Ajustes de voz: desplegable de voces y control de velocidad (100% - 200%). */
+.voice-field {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.voice-field label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.voice-field label span {
+  color: var(--text);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.voice-select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.voice-select optgroup {
+  color: var(--muted);
+  background: var(--panel);
+}
+
+.voice-select option {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.voice-rate {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.voice-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.voice-check input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+}
+
+.voice-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a3541;
+  border-radius: 8px;
+}
+
+/* Ventanas muy anchas: --thread-max vale 100%, asi que aqui NO se vuelve a topar
+   el hilo con una cifra fija de pixeles: eso era exactamente lo que dejaba media
+   pantalla vacia a la derecha. Solo se da aire a la lista lateral y se contiene
+   un poco la burbuja de lo tuyo. */
+
+@media (max-width: 980px) {
+  /* En ventana estrecha el panel pasa a capa flotante: el boton «Detalles»
+     sigue sirviendo en vez de dejar el panel muerto. */
+  .inspector {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    flex: none;
+    width: min(340px, 92vw);
+    box-shadow: -18px 0 44px rgba(0, 0, 0, 0.55);
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    flex: 0 0 216px;
+  }
+  .chat-meta {
+    display: none;
+  }
+  .btn-attach {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .attach-thumb,
+  .attach-thumb img,
+  .attach-thumb span {
+    max-width: 150px;
+  }
+}
+
+/* Telefonos o ventanas muy angostas: todo sigue aprovechando el ancho. */
+@media (max-width: 520px) {
+  body {
+    font-size: 14px;
+  }
+  .sidebar {
+    flex: 0 0 clamp(128px, 34vw, 190px);
+  }
+  .chat-header {
+    padding-block: 9px;
+  }
+  .chat-actions .btn {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+  .msg.is-user .bubble {
+    max-width: 100%;
+  }
+  .bubble .md-codebar {
+    padding-left: 8px;
+  }
+  .input {
+    min-height: 40px;
+  }
+}
+
+/* ---------------- Ancho comodo (opcional) y diagnostico ---------------- */
+/* El boton «Ancho comodo» de la cabecera pone width-cozy en <body>. ANTES
+   recortaba la columna de texto a 1180 px, y eso es justo lo que dejaba franja
+   vacia a la derecha (en la ventana de 1702 px del usuario, cualquier tope fijo
+   de ~1320 px produce un hueco de 382 px: el que reportaba la barra). Ahora el
+   ancho NO se recorta nunca: el chat y la columna llegan al borde derecho siempre.
+   Lo unico que hace el modo comodo es subir el tamano y el interlineado del texto
+   para que se lea sin pasear la vista, sin dejar ni un pixel muerto. */
+body.width-cozy {
+  --thread-max: 100%;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* El aviso que pinta el panel de detalles cuando algo sobra a la derecha o la
+   interfaz que estas viendo es de otra version. */
+.facts dd.is-warn {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Barrantes de medida que solo aparece pidiendo ?medida=1 en la direccion.
+   Sirve para comprobar con una captura cuanto ocupa cada zona. */
+.measure-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 7px 14px;
+  background: #0c0f14;
+  border-top: 1px solid var(--accent-strong);
+  color: #d5e7dc;
+  font-family: ui-monospace, Consolas, "Segoe UI Mono", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.measure-bar.is-gap {
+  border-top-color: var(--danger);
+  color: #f0d3d0;
+}
+
+/* Monitores muy anchos: la lista lateral gana aire y lo tuyo deja de estirarse
+   del todo. Lo del asistente ya ocupa de borde a borde porque --thread-max vale
+   100%: no hay ninguna cifra fija que deje franja vacia a la derecha. */
+@media (min-width: 1600px) {
+  .sidebar {
+    flex: 0 0 clamp(300px, 24vw, 420px);
+  }
+  .msg.is-user .bubble {
+    max-width: min(1100px, 72%);
+  }
+}
+
+/* Los avisos de adjuntos largos no empujan el cuadro hacia la izquierda. */
+.attach-note {
+  overflow-wrap: anywhere;
+}
+

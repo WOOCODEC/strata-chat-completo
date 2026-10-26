@@ -1,0 +1,67 @@
+STRATA LOCAL CHAT - paquete para Windows 10 / 11 de 64 bits
+===========================================================
+
+Este paquete lleva DENTRO el runtime de Node (runtime\node.exe) y todas las
+dependencias ya resueltas. En el ordenador de destino NO hace falta instalar
+Node, ni npm, ni Visual Studio, ni ningun entorno de desarrollo. Requisito
+unico: Windows 10 o 11 de 64 bits.
+
+---------------------------------------------------------------------------
+OPCION A - instalarlo como un programa (recomendado)
+---------------------------------------------------------------------------
+  1. Descomprime el zip donde quieras (por ejemplo en el Escritorio).
+  2. Doble clic en  Instalar.cmd
+     Se copia a  %LOCALAPPDATA%\Programs\StrataLocalChat
+     y crea en el Menu Inicio la carpeta "Strata Local Chat" con:
+        - Abrir Strata Local Chat
+        - Parar Strata Local Chat
+        - Estado del servidor
+     Queda registrado en "Agregar o quitar programas" para poder quitarlo.
+     Si ya habia una instalacion previa, tu historial y tu .env se conservan.
+  3. Menu Inicio > Strata Local Chat > Abrir Strata Local Chat
+     El chat se abre solo en  http://127.0.0.1:3000
+
+  Opciones del instalador (abrir una consola en la carpeta y escribir):
+     Instalar.cmd -Target "D:\Apps\StrataLocalChat"
+     Instalar.cmd -AutoStart        (arranca solo al encender el PC)
+
+  Para quitarlo:
+     Desinstalar.cmd        -> conserva el historial: copia database\ y .env a
+                               %LOCALAPPDATA%\StrataLocalChat-historial\<fecha>
+     Desinstalar.cmd -Purge -> borra tambien el historial
+
+---------------------------------------------------------------------------
+OPCION B - llevarlo en un USB o una carpeta, sin instalar nada
+---------------------------------------------------------------------------
+  Doble clic en  StrataChat.cmd        -> arranca y abre el chat
+  Doble clic en  StrataChat-parar.cmd  -> lo para
+  Doble clic en  StrataChat-estado.cmd -> dice que esta sonando
+  El programa y el historial se quedan dentro de la propia carpeta del paquete,
+  asi que puedes moverla de sitio o llevartela en un USB.
+
+---------------------------------------------------------------------------
+PRIMERA ARRANCADA (importante)
+---------------------------------------------------------------------------
+  * El servidor escucha SOLO en 127.0.0.1: nadie de tu red puede abrirlo y no
+    sale ningun dato de tu PC. No hay nubes, ni cuentas, ni telemetria.
+  * Necesita tu IA local sonando en  http://127.0.0.1:8080/v1  (Strata).
+    Si sin Strata, la interfaz arranca igual pero los mensajes fallan.
+  * La configuracion esta en el fichero  .env  de la raiz. Si no existe, el
+    instalador lo crea copiando  .env.example. Revisa ahi:
+       PORT         (puerto, por defecto 3000)
+       STRATA_MODEL (el nombre del modelo que tengas instalado)
+       DB_PATH      (donde se guarda el historial)
+  * El historial entero (chats, mensajes e imagenes) vive en UN solo fichero:
+       database\chat.db
+    Copialo si quieres una copia de seguridad, y sustituyendolo recuperas
+    tus conversaciones en otro PC.
+
+---------------------------------------------------------------------------
+Si algo va raro
+---------------------------------------------------------------------------
+  * "El puerto 3000 lo tiene OTRO programa": el arranque te lo dice y se pasa
+    el solo al siguiente puerto libre; mira que numero te cuenta.
+  * Si ves una interfaz rara o descolocada, recarga con Ctrl+Mayus+R: el
+    navegador puede estar guardando una copia vieja.
+  * Doble clic en StrataChat-estado.cmd para ver quien escucha y si Strata
+    esta alcanzable.

@@ -1,0 +1,36 @@
+{
+  "name": "strata-local-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chat privado y 100% local: interfaz web + servidor Express + historial SQLite + IA local en Strata (OpenAI-compatible en 127.0.0.1).",
+  "author": "aleja",
+  "license": "UNLICENSED",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:open": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/server.ps1 -Start -Open",
+    "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/server.ps1 -Stop",
+    "serve": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/server.ps1 -Status",
+    "dev": "node --watch src/server.js",
+    "check": "node --check src/server.js && node --check src/dbService.js && node --check src/strataService.js && node --check src/pdfService.js && node --check src/public/script.js && node --check src/public/markdown.js",
+    "smoke": "node tools/smoke.js",
+    "markdown": "node tools/markdown-check.js",
+    "copycheck": "node tools/copy-check.js",
+    "voicecheck": "node tools/voice-check.js",
+    "pdfcheck": "node tools/pdf-check.js",
+    "status": "node tools/status-check.js",
+    "vision": "node tools/vision-probe.js",
+    "verify": "node tools/verify-files.js && node tools/markdown-check.js && node tools/copy-check.js && node tools/pdf-check.js && node tools/voice-check.js && node tools/smoke.js"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "openai": "^7.43.0"
+  }
+}

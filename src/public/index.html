@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Strata · Chat local</title>
+    <!--
+      Doble candado: el servidor ya manda la cabecera Content-Security-Policy y
+      ademas se declara aqui, para que el navegador no pueda cargar NADA que no
+      sea el propio servidor (ni CDN, ni fuentes, ni analitica).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="favicon.png" />
+    <link id="stylesheet" rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <button id="btn-new" class="btn btn-primary" type="button">+ Nuevo Chat</button>
+        <input id="search" class="search" type="search" placeholder="Buscar en el historial" autocomplete="off" />
+      </div>
+
+      <nav id="chat-list" class="chat-list" aria-label="Historial de chats"></nav>
+      <p id="chat-list-hint" class="chat-list-hint">Aun no hay chats. Pulsa &laquo;+ Nuevo Chat&raquo;.</p>
+
+      <div class="sidebar-bottom">
+        <div id="status" class="status is-offline">
+          <span class="dot" aria-hidden="true"></span>
+          <span id="status-text">Comprobando conexion con Strata&hellip;</span>
+        </div>
+        <div id="model-name" class="model-name"></div>
+        <div id="db-info" class="db-info"></div>
+        <button id="btn-retry" class="btn btn-ghost" type="button">Reintentar conexion</button>
+      </div>
+    </aside>
+
+    <main class="chat">
+      <header class="chat-header">
+        <h1 id="chat-title" title="Doble clic para renombrar">Nuevo chat</h1>
+        <div class="chat-actions">
+          <span id="chat-meta" class="chat-meta"></span>
+          <button id="btn-rename" class="btn btn-ghost" type="button">Renombrar</button>
+          <button id="btn-delete" class="btn btn-danger" type="button">Borrar chat</button>
+          <button id="btn-inspector" class="btn btn-ghost" type="button" title="Mostrar u ocultar el panel de detalles">Detalles</button>
+          <button id="btn-width" class="btn btn-ghost" type="button" title="El chat ya ocupa toda la ventana hasta el borde. Si prefieres una linea de lectura mas corta, pulsa aqui.">Ancho completo</button>
+        </div>
+      </header>
+
+      <div id="messages" class="messages" role="log" aria-live="polite">
+        <div id="thread" class="thread"></div>
+      </div>
+
+      <form id="composer" class="composer">
+        <div id="attach-strip" class="attach-strip" hidden></div>
+        <div class="composer-row">
+          <input
+            id="file-input"
+            class="file-input"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,application/pdf"
+            multiple
+            hidden
+          />
+          <button
+            id="btn-attach"
+            class="btn btn-ghost btn-attach"
+            type="button"
+            title="Adjuntar imagen (PNG, JPG, WEBP o GIF) o un PDF. Las fotos grandes se reducen solas; a los PDF se les saca el texto aqui mismo, en tu PC. Tambien puedes pegar o arrastrar."
+          >
+            Adjuntar imagen o PDF
+          </button>
+          <textarea
+            id="input"
+            class="input"
+            rows="1"
+            placeholder="Escribe un mensaje para tu IA local&hellip;"
+            aria-label="Mensaje"
+          ></textarea>
+          <button id="btn-send" class="btn btn-primary" type="submit">Enviar</button>
+        </div>
+      </form>
+      <p class="composer-hint">
+        Enter para enviar &middot; Shift+Enter salto de linea &middot; Ctrl+V o arrastrar para adjuntar una imagen o un PDF &middot; a los PDF se les saca el texto en tu PC y solo ese texto llega a la IA &middot; el historial se guarda en tu disco
+      </p>
+    </main>
+
+    <aside id="inspector" class="inspector" aria-label="Detalles de la sesion">
+      <div class="inspector-top">
+        <h2>Detalles</h2>
+        <button id="btn-inspector-close" class="btn btn-ghost" type="button">Ocultar</button>
+      </div>
+
+      <div class="inspector-scroll">
+        <section class="inspector-block">
+          <h3>Modelo</h3>
+          <dl class="facts">
+            <div><dt>Nombre</dt><dd id="insp-model">&ndash;</dd></div>
+            <div><dt>Contexto</dt><dd id="insp-ctx">&ndash;</dd></div>
+            <div><dt>Acepta imagenes</dt><dd id="insp-vision">&ndash;</dd></div>
+            <div><dt>Servidor</dt><dd id="insp-url">&ndash;</dd></div>
+            <div><dt>API local</dt><dd id="insp-api">&ndash;</dd></div>
+            <div><dt>Voz</dt><dd id="insp-voice">&ndash;</dd></div>
+            <div><dt>Ultima respuesta</dt><dd id="insp-last">&ndash;</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-block">
+          <h3>Chat actual</h3>
+          <dl class="facts">
+            <div><dt>Mensajes</dt><dd id="insp-chat-count">&ndash;</dd></div>
+            <div><dt>Tokens del chat</dt><dd id="insp-chat-tokens">&ndash;</dd></div>
+            <div><dt>Fotos</dt><dd id="insp-chat-images">&ndash;</dd></div>
+            <div><dt>PDF</dt><dd id="insp-chat-docs">&ndash;</dd></div>
+            <div><dt>Empezado</dt><dd id="insp-created">&ndash;</dd></div>
+          </dl>
+          <div class="inspector-actions">
+            <button id="btn-export" class="btn btn-ghost" type="button">Exportar a Markdown</button>
+          </div>
+        </section>
+
+        <section class="inspector-block">
+          <h3>Ajustes locales</h3>
+          <dl class="facts">
+            <div><dt>Historial</dt><dd id="insp-limit-history">&ndash;</dd></div>
+            <div><dt>Temperatura</dt><dd id="insp-limit-temp">&ndash;</dd></div>
+            <div><dt>Salida maxima</dt><dd id="insp-limit-tokens">&ndash;</dd></div>
+            <div><dt>Imagenes por mensaje</dt><dd id="insp-limit-images">&ndash;</dd></div>
+            <div><dt>PDF por mensaje</dt><dd id="insp-limit-pdfs">&ndash;</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-block">
+          <h3>Voz de lectura</h3>
+          <div class="voice-field">
+            <label for="voice-pick">Voz</label>
+            <select id="voice-pick" class="voice-select"></select>
+          </div>
+          <div class="voice-field">
+            <label for="voice-rate">Velocidad <span id="voice-rate-value">100% &middot; 1.00x</span></label>
+            <input
+              id="voice-rate"
+              class="voice-rate"
+              type="range"
+              min="100"
+              max="200"
+              step="5"
+              value="100"
+              title="De la velocidad normal (100%) al doble (200%)"
+            />
+          </div>
+          <label class="voice-check">
+            <input id="voice-cloud" type="checkbox" />
+            <span>Usar voces del navegador (suenan mejor, pero el texto sale de este PC)</span>
+          </label>
+          <p class="voice-hint">
+            Para una voz natural sin salir de casa: en Windows, Configuracion &rsaquo; Hora e idioma &rsaquo; Voz &rsaquo;
+            Agregar voces, y baja una &laquo;Natural&raquo;. Aparecera en la lista de voces locales.
+          </p>
+        </section>
+
+        <section class="inspector-block">
+          <h3>Pantalla y version</h3>
+          <dl class="facts">
+            <div><dt>Ventana</dt><dd id="insp-viewport">&ndash;</dd></div>
+            <div><dt>Ancho del chat</dt><dd id="insp-width">&ndash;</dd></div>
+            <div><dt>Interfaz (CSS)</dt><dd id="insp-build">&ndash;</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-block">
+          <h3>En tu disco</h3>
+          <dl class="facts">
+            <div><dt>Base de datos</dt><dd id="insp-db-path">&ndash;</dd></div>
+            <div><dt>Tamano</dt><dd id="insp-db-size">&ndash;</dd></div>
+          </dl>
+        </section>
+
+        <section class="inspector-block">
+          <h3>Atajos</h3>
+          <ul class="tips">
+            <li>Enter envia &middot; Shift+Enter salto de linea</li>
+            <li>Ctrl+V o arrastra para adjuntar una imagen o un PDF</li>
+            <li>De un PDF se lee el texto en tu PC: la IA recibe ese texto, no el archivo</li>
+            <li>&laquo;Leer en voz alta&raquo; en cada respuesta &middot; Esc para parar</li>
+            <li>La voz y la velocidad de lectura (100% a 200%) se cambian aqui</li>
+            <li>&laquo;Copiar respuesta&raquo; y &laquo;Copiar bloque&raquo; en cada mensaje</li>
+            <li>Doble clic en el titulo para renombrar</li>
+            <li>El panel se puede ocultar con &laquo;Ocultar&raquo;</li>
+            <li>Si un dato sale &laquo;&ndash;&raquo;, mira &laquo;API local&raquo;: toca reiniciar el servidor</li>
+          </ul>
+        </section>
+      </div>
+    </aside>
+
+    <script src="markdown.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

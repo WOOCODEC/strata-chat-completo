@@ -14,6 +14,7 @@
     "serve": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/server.ps1 -Status",
     "dev": "node --watch src/server.js",
     "check": "node --check src/server.js && node --check src/dbService.js && node --check src/strataService.js && node --check src/pdfService.js && node --check src/public/script.js && node --check src/public/markdown.js",
+    "clean": "node tools/clean.js",
     "smoke": "node tools/smoke.js",
     "markdown": "node tools/markdown-check.js",
     "copycheck": "node tools/copy-check.js",

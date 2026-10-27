@@ -160,6 +160,38 @@ node tools\verify-files.js    # UTF-8 limpio, sin mojibake
 
 ## Registro de tandas
 
+### Tanda del 26/10/2026 (regla nueva: nada de empaquetar, se entrega por Git) - `npm run verify` completo sin fallos
+
+**La regla que se fija:** quedan **prohibidos** los `.zip`, los instaladores y las
+carpetas `packaging\` / `dist\`. El respaldo y el traslado a otro PC se hacen con
+Git y GitHub, y cada cambio se comprueba contra el servidor local en marcha y con
+`npm run verify`, sin binarios intermedios. Queda escrita en «Decisiones de
+seguridad y de producto» y al principio de «Verificacion» del `README.md`, para que
+nadie (nadie, incluida la IA de la tanda siguiente) lo intente otra vez.
+
+**Restos que quedaban, ya no:** el arbol se queda solo con `src\`, `tools\`,
+`database\`, el lanzador y la documentacion, y Git rastrea **28 ficheros**. Lo unico
+que todavia ensuciaba eran los logs de la arrancada anterior
+(`database\server.log.old` y `database\server-error.log.old`), borrados. El barrido
+de patrones de basura (`*.tmp`, `*.bak`, `*.orig`, `*.zip`, `*.exe`, `*.lnk`, `*~`,
+`.DS_Store`, sobras del arnes) no encontro ninguno mas.
+
+**Para no volver a acumular:** `tools\clean.js`, con `npm run clean` (y `--dry` para
+mirar antes). Borra solo lo que vuelve a crearse solo: `.log.old`, sobras del arnes
+(`smoke-test.db*`, sondas) y `*.tmp` / `*.bak` / `*.orig`. Lleva lista de intocables
+(`chat.db` con sus `-shm`/`-wal`, `server.pid` y los logs del servidor en marcha),
+asi que no puede llevarte el historial por delante, y si un fichero lo tiene abierto
+el servidor avisa en vez de fallar. Esta anotado en `verify-files.js` y en la
+estructura del `README.md`.
+
+**Verificacion con el metodo nuevo (cero paquetes):** `npm run verify` de cabo a
+rabo - codificacion **sin problemas**, markdown **21/0**, copiado **42/0**, voz
+**132/0**, arnes completo **128/0**. `node tools\browser-check.js` **13 de 13**
+contra el servidor en marcha (pid 29400, sin ventana): modelo
+`qwen3.8-flash-next-iq3_s`, chat de borde a borde con **hueco 0 px**, enlaces limpios
+sin `?v=` y cero errores de JavaScript. `npm run clean` en un workspace ya limpio
+cierra con **0 ficheros, 0 KB**, que es la prueba de que no queda basura.
+
 ### Tanda del 26/10/2026 (limpieza: fuera el empaquetado portable) - 128/128 en el arnes, 13/13 en Chrome real
 
 **Lo pedido:** el codigo ya esta versionado y subido a
@@ -902,6 +934,15 @@ dentro: `dist\portable\StrataLocalChat` 119,8 MB y
   no abre conexiones ni usa librerias externas, y un PDF cifrado o escaneado se
   reporta en voz alta en vez de rellenar el contexto con ruido.
 
+- **Nada de empaquetar ni de binarios (regla fijada el 26/10/2026)**: el respaldo
+  y el traslado a otros equipos se hacen con Git y GitHub
+  (`https://github.com/WOOCODEC/strata-chat-completo.git`). Prohibido generar
+  `.zip`, instaladores o carpetas `packaging\` / `dist\` al terminar una tanda: se
+  cambia el fuente y se comprueba con el servidor local en marcha y `npm run
+  verify`. El unico limpiador admitido es `npm run clean` (`tools\clean.js`), que
+  solo borra lo que vuelve a crearse solo y nunca toca `database\chat.db` ni
+  `.env`. Si algun dia hiciera falta el paquete con `node.exe` embebido, se
+  recupera del historial (commit `78a713c`) en vez de reconstruir el mecanismo.
 - **El paquete no llevaba datos personales por defecto** *(empaquetado retirado el
   26/10/2026, ver la tanda de limpieza; la regla sigue valiendo si se recupera del
   historial de Git)*: el zip portable incluia

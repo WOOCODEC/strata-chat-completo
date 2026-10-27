@@ -23,6 +23,7 @@ StrataLocalChat/
   tools/verify-files.js  <- comprueba que todos los ficheros sean UTF-8 limpio
   tools/server.ps1       <- arranque y parada limpia (npm run start:open / serve / stop)
   tools/browser-check.js <- abre un Chrome real contra la interfaz y mira lo que pinta
+  tools/clean.js         <- quita logs viejos y sobras del arnes (npm run clean)
   .env               <- configuracion (URL, modelo, DB, limites)
 ```
 
@@ -80,7 +81,13 @@ Si Node no esta en el PATH de la ventana que abras, usa la ruta completa
 
 ## Verificacion
 
+Aqui **no se compila ni se empaqueta nada**: se toca el fichero fuente y se
+comprueba contra el servidor local. Esta prohibido generar `.zip`, instaladores o
+carpetas `packaging\` / `dist\` en cualquier tanda (la regla queda anotada en
+`PROGRESS.md`, en «Decisiones de seguridad y de producto»).
+
 ```powershell
+npm run clean      # quita logs de arrancadas anteriores y sobras del arnes
 npm run check      # sintaxis de los modulos del servidor y de la interfaz
 npm run markdown   # renderizador de markdown: escapado, tablas y bloque con su boton de copiar
 npm run copycheck  # lo que suelta «Copiar sin formato» en el portapapeles

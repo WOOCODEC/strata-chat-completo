@@ -41,6 +41,7 @@ const FILES = [
   'tools/verify-files.js',
   'tools/server.ps1',
   'tools/browser-check.js',
+  'tools/clean.js',
 ];
 
 const MOJIBAKE_PATTERN = /[\u00C2\u00C3\uFFFD]/;

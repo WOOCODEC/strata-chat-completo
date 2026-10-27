@@ -170,7 +170,8 @@ seguridad y de producto» y al principio de «Verificacion» del `README.md`, pa
 nadie (nadie, incluida la IA de la tanda siguiente) lo intente otra vez.
 
 **Restos que quedaban, ya no:** el arbol se queda solo con `src\`, `tools\`,
-`database\`, el lanzador y la documentacion, y Git rastrea **28 ficheros**. Lo unico
+`database\`, el lanzador y la documentacion, y Git pasa a rastrear **29 ficheros**
+(28 tras la limpieza anterior mas `tools\clean.js`). Lo unico
 que todavia ensuciaba eran los logs de la arrancada anterior
 (`database\server.log.old` y `database\server-error.log.old`), borrados. El barrido
 de patrones de basura (`*.tmp`, `*.bak`, `*.orig`, `*.zip`, `*.exe`, `*.lnk`, `*~`,
